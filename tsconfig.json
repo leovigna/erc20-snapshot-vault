@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "sourceMap": true,
+        "outDir": "lib",
+        "strict": true,
+        "lib": [
+            "esnext"
+        ],
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "declaration": true,
+        "skipLibCheck": true
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
