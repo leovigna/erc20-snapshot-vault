@@ -33,7 +33,9 @@ describe('Example', function () {
     it('sum(): ethers contract', async () => {
         const deployed = await ExampleTruffle.new(); //Deploy with Truffle
         //@ts-ignore
-        const example = ExampleEthers.attach(deployed.address).connect(new ethers.providers.Web3Provider(web3.currentProvider));
+        const example = ExampleEthers.attach(deployed.address).connect(
+            new ethers.providers.Web3Provider(web3.currentProvider),
+        );
 
         assert.equal((await example.sum(1, 2)).toNumber(), 3, '1+2=3');
     });

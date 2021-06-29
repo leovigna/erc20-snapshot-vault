@@ -1,5 +1,3 @@
 import * as Example from './Example';
 
-export {
-    Example
-};
+export { Example };
