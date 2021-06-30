@@ -1,3 +1,3 @@
-import * as Example from './Example.json';
+import * as SnapshotVault from './SnapshotVault.json';
 
-export { Example };
+export { SnapshotVault };

@@ -2,28 +2,46 @@
 A smart contract to proportionally split periodical cashflows to a set of ERC20 holders.
 
 ## Intro
-Many crypto projects have benefited from the use the ERC20 token standard to raise funding and/or to incentivize user behavior such through airdrops or staking programs. 
+SnapshotVault aims to offer a better solution to distribute periodical cashflows proportionally to token holders without the need to lock tokens. Let's take the example of a decentralized fund called XYZ looking to distribute USDC profits to its token holders.
 
-The most common approach is to set a fixed supply and allocate a certain share of tokens to various budget concerns such as founding team, investors, liquidity mining, legal and marketing. However, this approach is flawed due to its static nature and it often ends up being the case that planned budgeting items are over or under estimated. 
+With a staking contract system, transferring the token is a lengthy process:
+- Alice unstakes XYZ, receiving shares of past profits
+- Alice transfers XYZ to Bob
+- Bob stakes XYZ, starting to claim profits
 
-Mintable tokens have an uncapped token supply that can grow depending on certain factors such as a governance vote, staking or other protocol constraints. This removes the static constraint and enables a more dynamic allocation of tokens depending on how different actors interact. One stakeholder however, is often quite adverse to mintable tokens: investors. This is due to the dilution effect that minting creates. In such situations, each percentage point of dilution must be accompanied by equivalent growth in value of the protocol to preserve investor value.
+With the SnapshotVault, the tracking of users' stake is achieved through ERC20Snapshot. Whenever XYZ fund pays out dividends, a snapshot of shareholders is taken.
+- 1000 USDC distributed as dividends, snapshot 1 taken
+- Alice transfers XYZ to Bob
+- Alice can claim her share of snapshot 1 dividends
+- Bob will be able to claim dividends for snapshot 2 if he holds XYZ until the next snapshot
 
-A solution to these conflicting incentives is to have a special set of non-dilutive tokens that protect investor value by cancelling out dilution. For example, a dilution protected investors with 5% of the token supply will always have 5% of the supply regardless if the supply is 100 or 1 million.
-
-A prototype of such a solution was introduced using ERC-721 NFTs to represent the protected shares held by investors but the non-fungibility of these shares makes them impractical for trading. Furthermore, to avoid looping overflow, we use a push-pull architecture where investors must burn their NFTs to claim the newly minted tokens. This means they then forfeit future dilution protection. The solution is therefore incomplete: investors are dilution protected but only up to the point in time where they trade in the dilution protection for the minted tokens.
-
-A new architecture is therefore necessary where:
-
-- The protected dilution protection class is also represented by an ERC20 token
-- Investors can claim minted tokens and preserve their future dilution protection.
-
-Also see https://www.notion.so/ERC20-Non-Dilutive-V2-8f74bde5b2b140938d73f731c21c1583
+SnapshotVault can have many uses:
+- Distributing dividends
+- Inflation protected token class
 
 ## Contracts
-- ERC20Common: The base common token. ERC20Mintable token. Sends X% of minted tokens to a vault for dilution protected investors.
-- ERC20Preferred: The preffered vault share token. Represents ownership in the Vault's assets. Note that it might be preferrable to integrate the token logic directly into the vault smart contract.
-- PreferredVault: A vault storing dilution protected investor's token. Minted tokens are "pushed" here by ERC20Common and must then be claimed (aka "pulled") individually by each investor. For this first prototype, investors MUST burn their share to claim their share of minted tokens. Burning is required as otherwise, investors could claim tokens twice. This basically improves the original prototype by replacing ERC721 with ERC20.
-- PreferredSnapshotVault: Additional improvement upon the preferred vault. Whenever tokens are minted by ERC20Common, the amount is stored by incrementing snapshot id. At the same time a snapshot of ERC20Prefferred holdings is made. This makes it possible to claim the newly minted tokens without burning the ERC20Prefferred token and therefore continue future dilution protection. Make sure to checkout OpenZeppelin's ERC20Snaphotable to see how ERC20 snaphotting is efficiently implemented in Solidity.
+### SnapshotVault
+A vault used to store and distribute cashflow tokens to shareholder token holders. The SnapshotVault is defined by its `shareholderToken` parameter which MUST be a token implementing the ERC20Snapshot extension. The token can have a variable supply since snapshots also store the total supply. The SnapshotVault `owner` address is responsible for triggerring snapshots: this can be delegated to a governance contract or a fixed periodical trigger. 
+For greater flexibility, the SnapshotVault is designed to be able to distribute any ERC20 token. Before even taking a snapshot, an address must approve dividend tokens (eg. 1000USDC) that will be transferred to the vault. The `snapshot()` function then transfers the tokens from the approval address and takes a snapshot of the shareholders.
+
+SnapshotVault functions:
+- snapshot(): OwnerOnly function that takes snapshot and transfers cashflow tokens to vault.
+- withdrawnOfAt(from, snapshotId): Amount of cashflow tokens already withdrawn by user.
+- withdrawableOfAt(from, snapshotId): Amount of cashflow tokens withdrawable by user.
+- withdraw(snapshotId, amount): Withdraw cashflow tokens for snapshot.
+
+### ERC20InflationProtected
+An ERC20Mintable token. Whenever tokens are minted by ERC20InflationProtected, X% of tokens are sent to SnapshotVault for dilution protected investors who also hold shares in the SnapshotVault. The SnapshotVault's share in ERC20InflationProtected is constant. Vault shareholders can become agnostic to the minting of new tokens by holding shares in the SnapshotVault proportional to their token holdings. For example, ABC token is mintable, and 10% of minted ABC is always sent to the vault represented by the ABCVault token.
+- SnapshotVault always received 10% of minted ABC
+- Alice holds 1% of ABC
+To hedge her investment from future ABC inflation, Alice buys 10% of the ABCVault token. This 10% stake in ABCVault represents a 1% claim on all future minted tokens. Alice is now agnostic to ABC minting, as she will always have 1% of ABC supply regardless of how many tokens are minted.
+
+ERC20InflationProtected hard codes the inflation protection of investors while also enabling flexible governance on the minting of tokens.
+
+### Test Contracts
+These are used for the purpose of testing but are also deployable as standalone contracts.
+- ERC20MintableOwnable: Mintable ERC20 with an owner that can call mint().
+- ERC20SnapshotOwnable: Snapshottable ERC20 with an owner that can call snapshot().
 
 ## Getting Started
 
@@ -50,115 +68,18 @@ lib
 └── web3  # web3 contract abstractions codegenned from abis + bytecode
 ```
 
-### Usage
+## Use Cases
+### Distributing Dividends
+TODO
+### Inflation Protected Token
+Many crypto projects have benefited from the use the ERC20 token standard to raise funding and/or to incentivize user behavior such through airdrops or staking programs. One challenge is the fair distribution of new tokens or of cashflows. Certain projects have opted for the use of staking, where users lock a certain amount of capital and periodically receive a preset amount of tokens every block. This system isn't ideal if users wish to use the token for other uses as they have to lock their token in the smart contract for the entire period. While some might argue that this the staking mechanism is a feature to prevent the selling the token, this barrier is purely artificial  when no minimum locking period is defined.
 
-These smart contracts can be imported as a dependency in various ways described below.
+The most common approach is to set a fixed supply and allocate a certain share of tokens to various budget concerns such as founding team, investors, liquidity mining, legal and marketing. However, this approach is flawed due to its static nature and it often ends up being the case that planned budgeting items are over or under estimated. 
 
-#### Solidity
+Mintable tokens have an uncapped token supply that can grow depending on certain factors such as a governance vote, staking or other protocol constraints. This removes the static constraint and enables a more dynamic allocation of tokens depending on how different actors interact. One stakeholder however, is often quite adverse to mintable tokens: investors. This is due to the dilution effect that minting creates. In such situations, each percentage point of dilution must be accompanied by equivalent growth in value of the protocol to preserve investor value.
 
-The solidity smart contracts themselves can simply be imported via the `solidity` directory of `@leovigna/erc20-snaphot-vault`.
+A solution to these conflicting incentives is to have a special set of non-dilutive tokens that protect investor value by cancelling out dilution. For example, a dilution protected investors with 5% of the token supply will always have 5% of the supply regardless if the supply is 100 or 1 million. We can achieve this by using SnapshotVault and ERC20InflationProtected: with this architecture, investors with shares in the SnapshotVault can protect themselves from any future inflation.
 
-```solidity
-import "@leovigna/erc20-snaphot-vault/solidity/Example.sol";
-```
-
-#### Artifacts
-
-JSON artifacts generated by sol-compiler are available under the abi directory.
-
-```typescript
-import ExampleArtifact from '@leovigna/erc20-snaphot-vault/abi/Example.json';
-```
-
-#### Ethers
-
-This library ships with `ethers` contract factory abstractions generated by typechain. To use these, make sure you have `ethers` installed as a dependency:
-
-```
-pnpm install ethers --save
-```
-
-You can then create an ethers contract as follows:
-
-```typescript
-import ExampleEthers from '@leovigna/erc20-snaphot-vault/ethers/Example';
-const example = ExampleEthers.attach(deployed.address).connect(
-    new ethers.providers.JsonRpcProvider('http://localhost:8545'),
-);
-```
-
-This gives a fully typed (if using TypeScript) version of a ethers contract factory. See the ethers documentation on usage.
-
-#### Truffle
-
-This library ships with `@truffle/contract` abstractions of each of our smart contracts. To use these, make sure you have `@truffle/contract` as a dependency.
-
-```
-pnpm install @truffle/contract --save
-```
-
-You can then create an truffle contract as follows:
-
-```typescript
-import ExampleTruffle from '@leovigna/erc20-snaphot-vault/truffle/Example';
-const example = await ExampleTruffle.new();
-```
-
-This gives a fully typed (if using TypeScript) version of a truffle contract. See the truffle documentation on usage.
-
-#### Web3
-
-This library ships with `web3-eth-contract` abstractions of each of our smart contracts. To use these, make sure you have `web3` and `web3-eth-contract` as a dependency.
-
-```
-pnpm install web3 web3-eth-contract --save
-```
-
-You can then create an web3 contract as follows:
-
-```typescript
-import ExampleWeb3 from '@leovigna/erc20-snaphot-vault/web3/Example';
-const example = ExampleWeb3(web3);
-```
-
-This gives a fully typed (if using TypeScript) version of a web3 contract. See the web3 documentation on usage.
-
-### Cloning
-
-To clone this starter repo and add it as an upstream folow below:
-
-```
-git clone https://github.com/leovigna/erc20-snaphot-vault.git myproject
-cd myproject
-git remote set-url origin git@github.com/leovigna/myproject.git
-git remote add upstream https://github.com/leovigna/erc20-snaphot-vault.git
-git push origin master
-git push --all
-```
-
-Then to sync any new changes form this repo to the new repo follow these [instructions](https://help.github.com/en/articles/syncing-a-fork).
-
-```
-git fetch upstream
-git checkout master
-git merge upstream/master
-```
-
-### Testing
-
-```
-npm run test
-```
-
-### Codestyle
-
-```
-npm run lint
-```
-
-## Contributing
-
-To contribute code, feel free to fork this repo.
 
 ## License
 

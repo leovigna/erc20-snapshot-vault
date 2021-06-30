@@ -5,11 +5,19 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/ERC20Snapshot.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
-contract MyToken is ERC20, ERC20Snapshot, Ownable {
-    constructor() ERC20('MyToken', 'MTK') {}
+import './IERC20Snapshot.sol';
 
-    function snapshot() public onlyOwner {
-        _snapshot();
+contract ERC20SnapshotOwnable is ERC20, ERC20Snapshot, Ownable, IERC20Snapshot {
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint256 totalSupply
+    ) ERC20(name, symbol) {
+        _mint(msg.sender, totalSupply);
+    }
+
+    function snapshot() public override onlyOwner returns (uint256) {
+        return _snapshot();
     }
 
     function _beforeTokenTransfer(
