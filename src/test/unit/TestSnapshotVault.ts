@@ -31,7 +31,26 @@ describe('SnapshotVault', function () {
 		await truffleAssert.reverts(vault.withdraw(1, 1001), 'amount > withdrawable');
 	})
 
-	it('Error: amount > nextSnapshotCashflow', async () => { })
+	it('Error: amount > nextSnapshotCashflow', async () => {
+		const cashflowToken = await ERC20MintableOwnable.new('USD Coin', 'USDC');
+		await cashflowToken.mint(accounts[0], 2000); //1000 USD
+		const shareholderToken = await ERC20SnapshotOwnable.new('XYZ Fund', 'XYZ', 100); //accounts[0] owns 100%
+
+		const vault = await SnapshotVault.new(shareholderToken.address);
+		await shareholderToken.transferOwnership(vault.address); //Transfer snapshot rights to vault
+		await cashflowToken.transfer(vault.address, 1000); //Transfer 1000 USD to Vault
+
+		await vault.snapshot(cashflowToken.address, 1000); //Create new snapshot
+		await truffleAssert.reverts(vault.snapshot(cashflowToken.address, 1000), 'amount > nextSnapshotCashflow'); //Reverts as balance insufficient
+
+		await vault.withdraw(1, 300); //Test accounting
+
+		await cashflowToken.transfer(vault.address, 1000); //Transfer 1000 USD to Vault
+		vault.snapshot(cashflowToken.address, 1000); //Works as balance is sufficient
+
+		await vault.withdraw(1, 700); //Test accounting
+		await vault.withdraw(2, 1000); //Test accounting
+	})
 
 	it('Vault 100% owned', async () => {
 		const cashflowToken = await ERC20MintableOwnable.new('USD Coin', 'USDC');
@@ -41,7 +60,7 @@ describe('SnapshotVault', function () {
 		const vault = await SnapshotVault.new(shareholderToken.address);
 		await shareholderToken.transferOwnership(vault.address); //Transfer snapshot rights to vault
 		assert.equal(await shareholderToken.owner(), vault.address, 'Snapshot permissions not set to vault')
-		await cashflowToken.transfer(vault.address, 1000); //Vault permitted to draw 1000 USD
+		await cashflowToken.transfer(vault.address, 1000); //Transfer 1000 USD to Vault
 		await vault.snapshot(cashflowToken.address, 1000); //Create new snapshot
 
 		//0 withdrawn
@@ -78,7 +97,7 @@ describe('SnapshotVault', function () {
 
 		const vault = await SnapshotVault.new(shareholderToken.address);
 		await shareholderToken.transferOwnership(vault.address); //Transfer snapshot rights to vault
-		await cashflowToken.transfer(vault.address, 1000); //Vault permitted to draw 1000 USD
+		await cashflowToken.transfer(vault.address, 1000); //Transfer 1000 USD to Vault
 		await vault.snapshot(cashflowToken.address, 1000); //Create new snapshot
 		await shareholderToken.transfer(accounts[1], 20); //accounts[0] owns 80% post-snapshot
 
@@ -102,7 +121,7 @@ describe('SnapshotVault', function () {
 
 		const vault = await SnapshotVault.new(shareholderToken.address);
 		await shareholderToken.transferOwnership(vault.address); //Transfer snapshot rights to vault
-		await cashflowToken.transfer(vault.address, 1000); //Vault permitted to draw 1000 USD
+		await cashflowToken.transfer(vault.address, 1000); //Transfer 1000 USD to Vault
 		await shareholderToken.transfer(accounts[1], 20); //accounts[0] owns 80% pre-snapshot
 		await vault.snapshot(cashflowToken.address, 1000); //Create new snapshot
 

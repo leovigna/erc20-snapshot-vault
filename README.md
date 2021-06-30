@@ -25,7 +25,7 @@ A vault used to store and distribute cashflow tokens to shareholder token holder
 For greater flexibility, the SnapshotVault is designed to be able to distribute any ERC20 token. Before even taking a snapshot, an address must approve dividend tokens (eg. 1000USDC) that will be transferred to the vault. The `snapshot()` function then transfers the tokens from the approval address and takes a snapshot of the shareholders.
 
 SnapshotVault functions:
-- snapshot(): OwnerOnly function that takes snapshot and transfers cashflow tokens to vault.
+- snapshot(cashflowTokenAddress): SNAPSHOT_ROLE-only function that takes snapshot and transfers cashflow tokens to vault.
 - withdrawnOfAt(from, snapshotId): Amount of cashflow tokens already withdrawn by user.
 - withdrawableOfAt(from, snapshotId): Amount of cashflow tokens withdrawable by user.
 - withdraw(snapshotId, amount): Withdraw cashflow tokens for snapshot.
