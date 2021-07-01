@@ -1,5 +1,11 @@
-# Solidity Starter Project
+# Snapshot Vault
 A smart contract to proportionally split periodical cashflows to a set of ERC20 holders.
+
+## TODO
+- Update README
+- Additional testing
+- Additional docs
+- Deploy as npm package
 
 ## Intro
 SnapshotVault aims to offer a better solution to distribute periodical cashflows proportionally to token holders without the need to lock tokens. Let's take the example of a decentralized fund called XYZ looking to distribute USDC profits to its token holders.
@@ -70,7 +76,7 @@ lib
 
 ## Use Cases
 ### Distributing Dividends
-TODO
+A decentralized trading fund or other cashflow generating decentralized organization can use the SnaphotVault to distribute profits to token holders on a periodic basis. Simply transfer the funds to the vault and have an authorized account call the `snapshot()` function. Users can claim these profits at any time and crucially, don't have to hold on to the tokens after the snapshot is made to do so.
 ### Inflation Protected Token
 Many crypto projects have benefited from the use the ERC20 token standard to raise funding and/or to incentivize user behavior such through airdrops or staking programs. One challenge is the fair distribution of new tokens or of cashflows. Certain projects have opted for the use of staking, where users lock a certain amount of capital and periodically receive a preset amount of tokens every block. This system isn't ideal if users wish to use the token for other uses as they have to lock their token in the smart contract for the entire period. While some might argue that this the staking mechanism is a feature to prevent the selling the token, this barrier is purely artificial  when no minimum locking period is defined.
 
