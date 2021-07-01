@@ -1,5 +1,3 @@
-import * as Example from './Example';
+import * as SnapshotVault from './SnapshotVault';
 
-export {
-    Example
-};
+export { SnapshotVault };
